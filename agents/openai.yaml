@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image to Video"
+  short_description: "Turn still images into video generation plans"
+  default_prompt: "Use $image2video to plan a short image-to-video generation from my reference image."
