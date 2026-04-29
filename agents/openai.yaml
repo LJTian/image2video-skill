@@ -1,4 +1,4 @@
 interface:
   display_name: "Image to Video"
-  short_description: "Turn still images into video plans or playable narrated clips"
-  default_prompt: "Use $image2video to create a short image-to-video plan or playable narrated clip from my reference images."
+  short_description: "Turn still images into video plans, briefs, or playable narrated clips"
+  default_prompt: "Use $image2video to turn my reference images into a short image-to-video plan, tool-ready brief, or playable narrated clip."

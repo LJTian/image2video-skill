@@ -1,0 +1,4 @@
+interface:
+  display_name: "图像转视频"
+  short_description: "将静态图片转成视频方案、简报或可播放的旁白视频"
+  default_prompt: "使用 $image2video 将我的参考图片转换成简短的图像转视频方案、可直接使用的简报或可播放的旁白视频。"

@@ -7,73 +7,129 @@ description: Use when turning still images, product photos, character references
 
 ## Overview
 
-Use this skill to convert one or more still images into a practical video generation plan or a playable local video file. Preserve the visual facts of the source image first, then add motion, camera behavior, timing, narration, audio, and delivery constraints.
+Use this skill to turn still images into a video plan or a playable local clip. Preserve the image facts first, then add motion, timing, narration, audio, and delivery constraints.
+
+Default rules:
+
+- Keep identity, geometry, text, and branding stable.
+- Ask only for constraints that change the result.
+- Prefer plausible motion over dramatic drift.
+- Use `ffmpeg` when no AI video model is available.
 
 ## Workflow
 
 1. Inspect the source image or ask for it if none is available.
-2. Extract stable facts: subject identity, composition, clothing, materials, text, lighting, background, style, and any details that must not change.
-3. Clarify missing production constraints only when they materially affect output: duration, aspect ratio, target platform, motion intensity, mood, and whether text/logos/faces must remain exact.
-4. Choose a motion pattern that fits the image instead of forcing action the still cannot support.
-5. Produce a tool-ready brief with prompt, negative prompt, shot timing, camera movement, subject motion, and consistency constraints.
-6. If the user wants an actual video file, build it with available local tools or the named generation tool, then verify the resulting streams.
-7. If the user wants multiple options, vary only one major dimension per option, such as camera move, emotion, environment motion, pacing, or voice style.
+2. Extract stable facts: subject, composition, clothes, materials, text, light, background, style, and any must-not-change details.
+3. Ask only for missing constraints that matter: duration, aspect ratio, platform, motion intensity, mood, and exact text/logo/face handling.
+4. Match motion to the image instead of forcing unsupported action.
+5. Output a tool-ready brief: prompt, negative prompt, timing, camera, subject motion, and consistency notes.
+6. If needed, build the clip locally or with the named tool, then verify the result.
+7. For multiple options, vary only one major dimension per option.
+
+## Clarifying Boundaries
+
+Ask only when the answer changes the output:
+
+- duration if the cut length is unclear
+- aspect ratio if the platform matters or the source is ambiguous
+- exact handling if text, logos, hands, or faces are present
+- motion intensity if subtle vs cinematic vs stylized is unclear
 
 ## Image Analysis Checklist
 
-- Subject: who or what is central, including pose, expression, shape, color, and visible accessories.
-- Scene: location, background depth, weather, props, signage, and horizon or floor lines.
-- Style: photo, cinematic, anime, product render, illustration, archival, UI mockup, or mixed media.
-- Lighting: source direction, contrast, color temperature, reflections, shadows, and time of day.
-- Constraints: exact text, brand marks, face identity, hands, product geometry, garment details, and anything likely to drift.
-- Video risk: areas where generation may fail, such as readable text, small logos, fingers, transparent objects, complex patterns, or mirrored reflections.
+Key checks:
 
-## Motion Selection
+- Subject: central person/object, pose, expression, shape, color, accessories
+- Scene: location, depth, weather, props, signs, horizon/floor lines
+- Style: photo, cinematic, anime, product render, illustration, UI, mixed media
+- Lighting: direction, contrast, temperature, reflections, shadows, time
+- Constraints: text, branding, face, hands, geometry, garment details
+- Risk: readable text, logos, fingers, transparent objects, patterns, mirrors
 
-Prefer subtle, physically plausible motion unless the user asks for a stylized transformation.
+Motion by asset:
 
-- Portrait or character: breathing, blink, hair movement, slight head turn, expression shift, handheld push-in.
-- Product: slow orbit, slider move, controlled highlight sweep, background parallax, shallow depth-of-field rack focus.
-- Landscape or architecture: clouds, water, foliage, people or vehicles in the distance, crane or dolly movement.
-- Illustration or concept art: layered parallax, atmospheric particles, cloth or smoke movement, cinematic camera drift.
-- UI or graphic: avoid inventing interactions unless requested; use clean zoom, pan, cursor trace, or state transition.
+- Portrait: breathing, blink, slight turn, hair movement, push-in
+- Product: slow orbit, slider move, highlight sweep, parallax, rack focus
+- Landscape: clouds, water, foliage, distant movement, dolly/crane
+- Illustration: layered parallax, particles, smoke/cloth drift, camera drift
+- UI: clean zoom/pan/cursor/state change; do not invent interactions
 
-Avoid motion that contradicts the still image, changes the object design, invents unreadable text, or requires unseen anatomy.
+Keep motion subtle unless the user asks for stylized transformation.
 
 ## Local Video Assembly
 
-When the user asks to generate a video from local images and no AI video model is configured, use `ffmpeg` to create a playable file rather than stopping at prompts.
+If no AI video model is available, use `ffmpeg` and verify the final file.
 
-- Order inputs by filename unless the user specifies a sequence.
-- Normalize resolution and aspect ratio early; use 720p (`1280x720`) when the user asks for 720P.
-- Make stills feel alive with `zoompan`: slow push-in/out, gentle pan, or slight drift. Avoid implying real character animation unless an AI video model is used.
-- Set each image duration from the content. If narration is present, match each image's display duration to the corresponding narration segment.
-- Prefer H.264 video in MP4 for compatibility. Use `yuv420p` pixel format.
-- Do not leave a partially generated file as the final output. If a command is slow or wrong, stop it and regenerate with corrected timing.
+- Order inputs by filename unless the user gives a sequence.
+- For comics/storyboards/explainers, make a contact sheet first.
+- Normalize early; use 720p (`1280x720`) when asked for 720P.
+- For square lesson posts, prefer 1080×1080 and pad instead of crop when text matters.
+- Use `zoompan` for slow push, pan, or drift. Do not imply real character animation.
+- Match each image duration to the narration segment when audio exists.
+- Prefer H.264 MP4 with `yuv420p`.
+- Never leave an intermediate file as the final output.
 
-For image-by-image narration timing, generate or collect one audio segment per image, measure each duration with `ffprobe`, then set each shot's frame count or duration from those measurements.
+Minimal example:
+
+```bash
+ffmpeg -loop 1 -i input.jpg -vf "scale=1280:720,zoompan=z='min(zoom+0.0015,1.08)':d=180:s=1280x720:fps=30,format=yuv420p" -t 6 -c:v libx264 output.mp4
+```
+
+If narration exists: make one audio segment per image, measure durations with `ffprobe`, render each shot to match, then mux and verify the final MP4.
 
 ## Narration and Audio
 
-When images contain readable captions, labels, or bottom explanatory text, extract that text as the narration source instead of inventing a summary. Rewrite only enough for speech clarity while preserving the original meaning.
+If the image has readable captions, labels, or bottom text, use them as the narration source. Rewrite only for speech clarity.
 
 Voice selection guidance:
 
-- If the user requests a mainland Chinese female anchor/newscaster voice, prefer `zh-CN-XiaoxiaoNeural` when Microsoft Edge/Azure TTS is available. It is a warm Mandarin female voice and commonly supports news-style use.
-- If the user requests a Taiwanese Mandarin female voice, prefer `zh-TW-HsiaoYuNeural` or `zh-TW-HsiaoChenNeural` when available.
-- If only macOS `say` is available, warn that voices such as `Tingting` or `Meijia` are less natural than neural TTS.
-- If current TTS voice availability might have changed, verify with the tool or official provider docs before promising a specific voice.
+- Mainland Chinese female anchor: `zh-CN-XiaoxiaoNeural`
+- Mainland Chinese male anchor/news/doc: `zh-CN-YunyangNeural` (`--rate=-4%`, `--pitch=-8Hz` if needed)
+- Passionate mainland Chinese male: `zh-CN-YunjianNeural` if available
+- Taiwanese Mandarin female: `zh-TW-HsiaoYuNeural` or `zh-TW-HsiaoChenNeural`
+- If only macOS `say` is available, warn that it is less natural.
+- Verify voice availability before promising it.
 
 Audio handling rules:
 
-- If the user asks for the voice to sound natural, do not apply dynamic compression, heavy normalization, EQ, or pitch tricks unless they ask for processing.
-- For MP4 delivery, encode or remux audio as AAC for compatibility. Do not rely on MP3-in-MP4 as the final deliverable; some players show the stream but play silence.
-- Preserve a natural pace by lengthening the video when narration is long instead of truncating the audio or forcing an unnatural speed.
-- Verify the final audio stream with `ffprobe`, and use a short `volumedetect` or decode-to-null check to confirm it is not silent.
+- Do not add compression, EQ, or pitch tricks unless asked.
+- Verify `edge-tts` voices before use; if network is blocked, ask for permission.
+- Use AAC in MP4.
+- Lengthen video instead of rushing long narration.
+- Verify the final audio stream with `ffprobe` and a non-silent check.
+
+## Educational Explainer Pattern
+
+Use this pattern when the images are a numbered lesson, historical explanation, comic panel sequence, infographic, or social-media carousel.
+
+Story arc:
+
+- First 3 seconds: hook with curiosity, tension, or a sharp promise
+- Middle: show the conflict, problem, misconception, or tradeoff
+- End: explain the principle and resolve the tension
+- Keep the hook tied to the source image and end with one clear takeaway when useful
+
+Rules:
+
+- Keep the source text visible; use padding and modest zoom
+- Let narration follow the panel logic, not just describe the image
+- Match tone to topic: news, documentary, teacher, or energetic host
+- Give each panel enough time for natural delivery
+- Use slow push, gentle parallax, or alternating pan; avoid fast moves/shake
+- End with a short synthesis if needed
+
+## Failure Modes
+
+Call out likely drift risks in the negative prompt when they matter.
+
+- Preserve text, subtitles, labels, and logos unless stylization is requested.
+- Hands, fingers, jewelry, and small accessories drift easily.
+- Be careful with transparent, reflective, mirrored, patterned, or grid-heavy assets.
+- Preserve face or brand identity unless the user asks for a transformation.
 
 ## Output Format
 
-For a single generation, provide:
+For a single generation:
 
 ```markdown
 Brief:
@@ -99,7 +155,7 @@ Settings:
 - Seed or consistency note:
 ```
 
-For multiple shots, use a compact shot list:
+For multiple shots:
 
 ```markdown
 Shot 1:
@@ -108,6 +164,19 @@ Shot 1:
 - Camera:
 - Motion:
 - Prompt:
+- Continuity notes:
+```
+
+For explainers and story-driven clips, prefer this beat structure:
+
+```markdown
+Beat 1:
+- Time:
+- Goal: Hook / Conflict / Resolution
+- Hook:
+- Visual anchors:
+- Motion:
+- Narration:
 - Continuity notes:
 ```
 
