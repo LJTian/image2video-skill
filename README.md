@@ -8,6 +8,14 @@ This repository contains a Codex skill for planning image-to-video generation fr
 SKILL.md
 agents/
   openai.yaml
+  openai.zh-CN.yaml
+references/
+  local-video-assembly.md
+  story-audio-and-risk.md
+scripts/
+  validate_skill.py
+tests/
+  test_validate_skill.py
 ```
 
 ## What It Does
@@ -17,9 +25,10 @@ The skill helps an agent turn a reference image into a tool-ready brief or a pla
 - Source image analysis
 - Visual consistency and motion planning
 - Prompt, negative prompt, and timing structure
-- Narration/audio for text-heavy or panel-based images
+- Interactive planning for narration, background music, subtitles, and motion controls
+- Default story line template with hook -> conflict -> resolution
+- On-demand references for local MP4 assembly and fidelity risk handling
 - Local `ffmpeg` assembly when no AI video model is available
-- Hook -> conflict -> resolution storytelling for explainers
 - Basic quality checks for common failure modes
 
 ## Usage
@@ -48,14 +57,17 @@ Required files:
 - `SKILL.md`
 - `agents/openai.yaml`
 
-Validate with `quick_validate.py` if `PyYAML` is installed:
+Run the dependency-free repository validation:
+
+```bash
+python3 scripts/validate_skill.py
+python3 -m unittest tests/test_validate_skill.py
+```
+
+You can also run Codex's `quick_validate.py` if `PyYAML` is installed:
 
 ```bash
 python3 /Users/ljtian-mac-mini/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Volumes/data/git/image2video-skill
 ```
 
-If your Codex environment uses `RTK`, prefix shell commands with `rtk`:
-
-```bash
-rtk python3 /Users/ljtian-mac-mini/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Volumes/data/git/image2video-skill
-```
+If your Codex environment uses `RTK`, prefix shell commands with `rtk`.

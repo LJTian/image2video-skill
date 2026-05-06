@@ -7,7 +7,7 @@ description: Use when turning still images, product photos, character references
 
 ## Overview
 
-Use this skill to turn still images into a video plan or a playable local clip. Preserve the image facts first, then add motion, timing, narration, audio, and delivery constraints.
+Turn still images into a video plan or playable local clip. Preserve image facts first, then add motion, timing, narration, audio, subtitles, and delivery constraints.
 
 Default rules:
 
@@ -16,15 +16,30 @@ Default rules:
 - Prefer plausible motion over dramatic drift.
 - Use `ffmpeg` when no AI video model is available.
 
+References:
+
+- For playable local MP4 output, audio muxing, or `ffmpeg` fallback, read `references/local-video-assembly.md`.
+- For narration, subtitles, story-driven explainers, numbered panels, or fidelity risks, read `references/story-audio-and-risk.md`.
+
 ## Workflow
 
 1. Inspect the source image or ask for it if none is available.
-2. Extract stable facts: subject, composition, clothes, materials, text, light, background, style, and any must-not-change details.
-3. Ask only for missing constraints that matter: duration, aspect ratio, platform, motion intensity, mood, and exact text/logo/face handling.
+2. Extract stable facts: subject, composition, pose, clothing/materials, text, light, background, style, and must-not-change details.
+3. Ask only for missing constraints that affect output: duration, aspect ratio, story template, narration, voice type, background music, subtitles, motion controls, and exact text/logo/face handling.
 4. Match motion to the image instead of forcing unsupported action.
-5. Output a tool-ready brief: prompt, negative prompt, timing, camera, subject motion, and consistency notes.
-6. If needed, build the clip locally or with the named tool, then verify the result.
+5. Produce a tool-ready brief: prompt, negative prompt, timing, camera, motion, audio, subtitles, and consistency notes.
+6. If building a local clip, verify the final file path and streams before reporting it.
 7. For multiple options, vary only one major dimension per option.
+
+Suggested question order:
+
+- Story template: default to the story line template unless the user asks for another template later
+- Narration: on or off
+- Voice type: female anchor or male anchor only
+- Background music: on or off
+- Subtitles: on or off
+- Motion controls: choose specific camera and subject movements
+- Duration and aspect ratio: only if still unclear
 
 ## Clarifying Boundaries
 
@@ -33,7 +48,16 @@ Ask only when the answer changes the output:
 - duration if the cut length is unclear
 - aspect ratio if the platform matters or the source is ambiguous
 - exact handling if text, logos, hands, or faces are present
-- motion intensity if subtle vs cinematic vs stylized is unclear
+- narration, music, subtitles, or motion controls if the user has not chosen them yet
+
+Default story template:
+
+- Story line: hook in the first 3 seconds with curiosity, tension, or a strong promise
+- Middle: show the conflict, problem, misconception, or tradeoff
+- End: explain the principle and clear the tension
+- Keep the hook tied to the source image and end with one clear takeaway when useful
+
+Other story templates are intentionally left empty for later addition.
 
 ## Image Analysis Checklist
 
@@ -44,7 +68,7 @@ Key checks:
 - Style: photo, cinematic, anime, product render, illustration, UI, mixed media
 - Lighting: direction, contrast, temperature, reflections, shadows, time
 - Constraints: text, branding, face, hands, geometry, garment details
-- Risk: readable text, logos, fingers, transparent objects, patterns, mirrors
+- Risk: readable text, logos, hands, transparency, reflections, patterns, mirrors
 
 Motion by asset:
 
@@ -56,76 +80,36 @@ Motion by asset:
 
 Keep motion subtle unless the user asks for stylized transformation.
 
+If the source image contains numbered panels, step labels, or numbered overlays, remove the numbering in the video by default unless the user explicitly asks to preserve it.
+
 ## Local Video Assembly
 
-If no AI video model is available, use `ffmpeg` and verify the final file.
-
-- Order inputs by filename unless the user gives a sequence.
-- For comics/storyboards/explainers, make a contact sheet first.
-- Normalize early; use 720p (`1280x720`) when asked for 720P.
-- For square lesson posts, prefer 1080×1080 and pad instead of crop when text matters.
-- Use `zoompan` for slow push, pan, or drift. Do not imply real character animation.
-- Match each image duration to the narration segment when audio exists.
-- Prefer H.264 MP4 with `yuv420p`.
-- Never leave an intermediate file as the final output.
-
-Minimal example:
+If no AI video model is available, use `ffmpeg` and verify the final file. Read `references/local-video-assembly.md` before assembling a playable video.
 
 ```bash
 ffmpeg -loop 1 -i input.jpg -vf "scale=1280:720,zoompan=z='min(zoom+0.0015,1.08)':d=180:s=1280x720:fps=30,format=yuv420p" -t 6 -c:v libx264 output.mp4
 ```
 
-If narration exists: make one audio segment per image, measure durations with `ffprobe`, render each shot to match, then mux and verify the final MP4.
+Use H.264 MP4 with `yuv420p`. If narration exists, match each image to the audio segment and verify the final MP4 with `ffprobe`.
 
 ## Narration and Audio
 
-If the image has readable captions, labels, or bottom text, use them as the narration source. Rewrite only for speech clarity.
+If the image has readable captions, labels, or bottom text, use them as the narration source. Rewrite only for speech clarity. Read `references/story-audio-and-risk.md` for explainers, subtitles, panel sequences, or fidelity-sensitive assets.
 
 Voice selection guidance:
 
-- Mainland Chinese female anchor: `zh-CN-XiaoxiaoNeural`
-- Mainland Chinese male anchor/news/doc: `zh-CN-YunyangNeural` (`--rate=-4%`, `--pitch=-8Hz` if needed)
-- Passionate mainland Chinese male: `zh-CN-YunjianNeural` if available
-- Taiwanese Mandarin female: `zh-TW-HsiaoYuNeural` or `zh-TW-HsiaoChenNeural`
-- If only macOS `say` is available, warn that it is less natural.
-- Verify voice availability before promising it.
+- Only offer two voice types: female anchor and male anchor
+- Use a female anchor voice or a male anchor voice available in the chosen tool
+- If only macOS `say` is available, warn that it is less natural
+- Verify voice availability before promising it
 
 Audio handling rules:
 
 - Do not add compression, EQ, or pitch tricks unless asked.
-- Verify `edge-tts` voices before use; if network is blocked, ask for permission.
+- Verify the chosen voice before use; if network is blocked, ask for permission.
 - Use AAC in MP4.
 - Lengthen video instead of rushing long narration.
 - Verify the final audio stream with `ffprobe` and a non-silent check.
-
-## Educational Explainer Pattern
-
-Use this pattern when the images are a numbered lesson, historical explanation, comic panel sequence, infographic, or social-media carousel.
-
-Story arc:
-
-- First 3 seconds: hook with curiosity, tension, or a sharp promise
-- Middle: show the conflict, problem, misconception, or tradeoff
-- End: explain the principle and resolve the tension
-- Keep the hook tied to the source image and end with one clear takeaway when useful
-
-Rules:
-
-- Keep the source text visible; use padding and modest zoom
-- Let narration follow the panel logic, not just describe the image
-- Match tone to topic: news, documentary, teacher, or energetic host
-- Give each panel enough time for natural delivery
-- Use slow push, gentle parallax, or alternating pan; avoid fast moves/shake
-- End with a short synthesis if needed
-
-## Failure Modes
-
-Call out likely drift risks in the negative prompt when they matter.
-
-- Preserve text, subtitles, labels, and logos unless stylization is requested.
-- Hands, fingers, jewelry, and small accessories drift easily.
-- Be careful with transparent, reflective, mirrored, patterned, or grid-heavy assets.
-- Preserve face or brand identity unless the user asks for a transformation.
 
 ## Output Format
 
@@ -167,7 +151,7 @@ Shot 1:
 - Continuity notes:
 ```
 
-For explainers and story-driven clips, prefer this beat structure:
+For story-driven clips, use this beat structure:
 
 ```markdown
 Beat 1:
@@ -188,7 +172,7 @@ Beat 1:
 - Use one camera move per short clip unless the requested result needs a sequence.
 - Keep temporal language concrete: "over 5 seconds", "slow push-in", "subtle hair movement", "background lights shimmer".
 - State preservation constraints positively in the prompt and failure modes in the negative prompt.
-- For tools with separate fields, split prompt, negative prompt, duration, aspect ratio, motion strength, and seed instead of burying everything in one paragraph.
+- For tools with separate fields, split prompt, negative prompt, duration, aspect ratio, motion strength, and seed.
 
 ## Tool Adaptation
 
@@ -209,7 +193,7 @@ Before finalizing, check that the plan:
 
 For playable files, also check:
 
-- The output path exists and points to the final file, not an intermediate.
-- Video stream: codec, resolution, FPS, duration.
-- Audio stream when requested: codec, sample rate, channels, duration, and audible nonzero volume.
-- Playback compatibility: prefer H.264 + AAC in MP4 for broad players.
+- Output path exists and points to the final file, not an intermediate.
+- Video stream has expected codec, resolution, FPS, and duration.
+- Audio stream exists and is non-silent when requested.
+- Playback compatibility uses H.264 MP4 and AAC audio when audio is present.

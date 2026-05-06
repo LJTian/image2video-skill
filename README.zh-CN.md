@@ -8,6 +8,14 @@
 SKILL.md
 agents/
   openai.yaml
+  openai.zh-CN.yaml
+references/
+  local-video-assembly.md
+  story-audio-and-risk.md
+scripts/
+  validate_skill.py
+tests/
+  test_validate_skill.py
 ```
 
 ## 功能
@@ -17,9 +25,10 @@ agents/
 - 源图片分析
 - 视觉一致性和运动规划
 - Prompt、negative prompt 和时长结构
-- 含文字或分镜内容时的旁白与音频规划
+- 旁白、背景音乐、字幕和动法的交互式规划
+- 默认故事线模板：前3秒钩子 -> 中段冲突 -> 结尾化解
+- 按需读取的本地 MP4 组装和保真风险处理参考
 - 没有 AI 视频模型时使用 `ffmpeg` 做本地组装
-- 用 `hook -> conflict -> resolution` 讲更有吸引力的解释型故事
 - 常见图像转视频失败模式的质量检查
 
 ## 使用方式
@@ -48,14 +57,17 @@ ln -s /Volumes/data/git/image2video-skill ~/.codex/skills/image2video
 - `SKILL.md`
 - `agents/openai.yaml`
 
-如果已安装 `PyYAML`，可以用 `quick_validate.py` 验证：
+运行无第三方依赖的仓库验证：
+
+```bash
+python3 scripts/validate_skill.py
+python3 -m unittest tests/test_validate_skill.py
+```
+
+如果已安装 `PyYAML`，也可以运行 Codex 的 `quick_validate.py`：
 
 ```bash
 python3 /Users/ljtian-mac-mini/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Volumes/data/git/image2video-skill
 ```
 
-如果当前 Codex 环境使用 `RTK`，请在命令前加上 `rtk`：
-
-```bash
-rtk python3 /Users/ljtian-mac-mini/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Volumes/data/git/image2video-skill
-```
+如果当前 Codex 环境使用 `RTK`，请在命令前加上 `rtk`。
